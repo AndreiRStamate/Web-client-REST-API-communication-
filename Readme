@@ -1,0 +1,92 @@
+Stamate Robert Andrei,
+325CCb
+
+
+PROTOCOALE DE COMUNICAŢIE
+Tema 3 Client Web. Comunicaţie cu REST API.
+
+
+Precizare 1.: pentru implementarea clientului am utilizat fisierele "buffer",
+"helpers" si "requests" oferite in laboratorul 10.
+
+Precizare 2.: pentru parsarea JSON am ales biblioteca nlohmann
+(https://github.com/nlohmann/json), datorita usurintei de utilizare.
+
+
+Toata logica programului se executa intr-o bucla infinita "loop",
+unde se citesc comenzi de la tastatura si, in urma parsarii informatiei, se
+trimit cereri potrivite catre server.
+
+Comenzile disponibile sunt cele din cerinta, dupa cum urmeaza:
+	"register": se introduc un username si o parola in format std::string
+				(este permisa inregistrarea unui utilizator cu spatii in nume
+				si in parola);
+				se trimite o cerere POST catre /api/v1/tema/auth/register
+				cu un JSON creat cu ajutorul librariei nlohmann-json drept
+				payload;
+				se intoarce Created sau eroare 400 in cazul in care username-ul
+				exista deja.
+
+	"login": se golesc variabilele "cookie" si "jwtToken" (detaliate mai jos);
+			 se introduc un username si o parola in format std::string;
+			 se trimite o cerere POST catre /api/v1/tema/auth/login cu un
+			 JSON drept payload;
+			 se intoarce un cookie de sesiune (salvat mai departe in variabila
+			 "cookie") sau o eroare 400 in cazul in care username-ul nu exista.
+
+	"enter_library": se trimite o cerere GET catre /api/v1/tema/library/access
+					 cu cookie-ul obtinut in urma comenzii "login";
+					 intoarce un token JWT (salvat mai departe in variabila 
+					 "jwtToken") sau o eroare 401 in cazul in care nu se poate
+					 demonstra autentificarea.
+
+	"get_books": se trimite o cerere GET catre /api/v1/tema/library/books cu
+				 token-ul JWT obtinut in urma comenzii "enter_library";
+				 intoarce lista cartilor utilizatorului autentificat sau o
+				 eroare 403 in cazul in care nu se poate demonstra accesul la
+				 biblioteca.
+
+	"get_book": se introduce un ID in format int (programul nu trece mai
+				departe pana nu se introduce un int);
+				se trimite o cerere GET catre /api/v1/tema/library/books/ID
+				cu token-ul JWT obtinut in urma comenzii "enter_library";
+				intoarce cartea in format json corespunzatoare ID-ului primit
+				de la tastatura, eroare 403 in cazul in care nu se poate
+				demonstra accesul la biblioteca sau eroare 404 in cazul in care
+				nu exista o carte cu ID-ul precizat.
+
+	"add_book": se introduc datele unei carti conform cerintei, cu precizarea
+				ca numarul de pagini se comporta ca "ID-ul" din comanda
+				"get_book", si se parseaza toate datele intr-un json, cu
+				ajutorul librariei nlohmann-json;
+				se trimite o cerere POST catre /api/v1/tema/library/books
+				cu token-ul JWT obtinut in urma comenzii "enter_library";
+				intoarce OK sau o eroare 403 in cazul in care nu se poate
+				demonstra accesul la biblioteca.
+
+	"delete_book": se introduce un ID in format int;
+				   se trimite o cerere DELETE catre
+				   /api/v1/tema/library/books/ID cu token-ul JWT obtinut in
+				   urma comenzii "enter_library";
+				   se intoarce OK, o eroare 404 in cazul in care nu exista
+				   o carte cu ID-ul precizat sau o eroare 403 in cazul
+				   in care nu se poate demonstra accesul la biblioteca.
+
+	"logout": se trimite o cerere GET catre /api/v1/tema/auth/logout cu
+			  cookie-ul obtinut in urma comenzii "login";
+			  intoarce OK sau o eroare 400 in cazul in care nu se poate
+			  demonstra autentificarea;
+			  se golesc variabilele "cookie" si "jwtToken".
+
+	"exit": se inchide programul prin apelul "exit(0)".
+
+Toate comenzile mentionate mai sus urmeaza un template:
+	- Se obtin datele de la tastatura (daca este cazul);
+	- Se deschide o conexiune prin apelul 
+		"open_connection("34.118.48.238", 8080, AF_INET, SOCK_STREAM, 0)";
+	- Se proceseaza si apoi se trimite mesajul potrivit catre server;
+	- Se afiseaza raspunsul de la server si, daca este cazul, se salveaza
+		un cookie de sesiune sau un token JWT in variabile de tip std::string;
+	- Se inchide conexiunea prin apelul
+		"close_connection(sockfd)", cu precizarea ca "sockfd" este obtinut
+		in urma apelului "open_connection()".
